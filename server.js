@@ -23,6 +23,7 @@ var MAX_LATEST = 5;
  * }
  */
 var getMostRead = function(cb) {
+  // Get reverse sorted range from sorted set where read count is used as score
   client.zrevrange('articles:reads', 0, MAX_LATEST - 1, 'withscores', function(err, res) {
     var mostRead = [];
     for (var i = 0; i < res.length; i++) {
@@ -37,6 +38,7 @@ var getMostRead = function(cb) {
  * Get last read for user
  */
 var getLastRead = function(user, cb) {
+  // Get range from latest reads by user list
   client.lrange('user:' + user + ':lastread', 0, MAX_LATEST - 1, cb);
 };
 
@@ -44,6 +46,7 @@ var getLastRead = function(user, cb) {
  * Get all existing tags (single list)
  */
 var getTags = function(cb) {
+  // Get all members of 'tags' set
   client.smembers('tags', cb);
 };
 
@@ -51,6 +54,7 @@ var getTags = function(cb) {
  * Get latest articles (return list of IDs)
  */
 var getLatest = function(cb) {
+  // Get range from latest article list
   client.lrange('articles:latest', 0, MAX_LATEST - 1, cb);
 };
 
@@ -63,8 +67,10 @@ var getLatest = function(cb) {
  * }
  */
 var getArticle = function(id, cb) {
+  // Get the article
   client.get('articles:' + id, function(err, article) {
     if (err) return cb(err);
+    // Get it's tags from set
     client.smembers('articles:' + id + ':tags', function(err, tags) {
       if (err) return cb(err);
       cb(null, {id: id, text: article, tags: tags})
@@ -76,6 +82,7 @@ var getArticle = function(id, cb) {
  * Get article IDs by tag (list if IDs)
  */
 var getArticlesByTag = function(tag, cb) {
+  // Get all members of a certain tag from set
   client.smembers('tags:' + tag + ':articles', cb);
 };
 
@@ -83,8 +90,11 @@ var getArticlesByTag = function(tag, cb) {
  * Log a read for given article and user
  */
 var logRead = function(id, user) {
+  // Push to the list of last reads by user
   client.lpush('user:' + user + ':lastread', id);
+  // Trim the list to contain only what is needed
   client.ltrim('user:' + user + ':lastread', 0, MAX_LATEST - 1);
+  // Use sorted set for article read count
   client.zincrby('articles:reads', 1, id);
 };
 
@@ -95,13 +105,19 @@ var addArticle = function(body, tags) {
   console.log('Add article with tags ', tags);
 
   var id = new Date().getTime();
+  // Store the article in single string
   client.set('articles:' + id, body);
+  // Store article tags in set
   client.sadd('articles:' + id + ':tags', tags);
+  // Store the article ID for each tag (in set)
   for (var i = 0; i < tags.length; i++) {
     client.sadd('tags:' + tags[i] + ':articles', id);
   }
+  // Keep all seen tags in a set
   client.sadd('tags', tags);
+  // Push the ID to the latest
   client.lpush('articles:latest', id);
+  // Trim the latest to only hold whats needed
   client.ltrim('articles:latest', 0, MAX_LATEST - 1);
   return;
 };
