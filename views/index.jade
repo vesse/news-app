@@ -1,0 +1,46 @@
+doctype html
+html
+  head
+    meta(charset='utf-8')
+    meta(http-equiv='X-UA-Compatible', content='IE=edge,chrome=1')
+    title Redis News
+
+  body
+    h2 Welcome #{user.username}
+    a(href='/logout') Logout
+
+
+    h2 Add new article
+    form(method='post' action='/articles')
+      label(for='text') Body
+      textarea#text(name='text' rows=5 cols=30)
+      br
+      label(for='tags') Tags
+      input#tags(name='tags' size=30)
+      br
+      br
+      input(type='submit' value='Add')
+
+    h2 Latest
+    ul
+      for id in latest
+        li
+          a(href='/articles/#{id}')= id
+
+    h2 Last read by you
+    ul
+      for id in lastRead
+        li
+          a(href='/articles/#{id}')= id
+
+    h2 Most read articles
+    ul
+      for article in mostRead
+        li
+          a(href='/articles/#{article.id}') #{article.id} (reads: #{article.reads})
+
+    h2 Tags
+    ul
+      for tag in tags
+        li
+          a(href='/articles/tag/#{tag}')= tag

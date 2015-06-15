@@ -1,0 +1,13 @@
+doctype html
+html
+  head
+    meta(charset='utf-8')
+    meta(http-equiv='X-UA-Compatible', content='IE=edge,chrome=1')
+    title Redis News
+
+  body
+    form(action='/login' method='post')
+      label(for='username') Username
+      input#username(name='username')
+      input(type='hidden' name='password' value='password')
+      input(type='submit' value='Login')
